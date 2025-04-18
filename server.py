@@ -9,6 +9,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.abspath("data")
 TEMP_DIR = os.path.abspath("temp")
 
+
 @app.route("/download/", defaults={"subpath": ""}, methods=["GET"])
 @app.route("/download/<path:subpath>", methods=["GET"])
 def download_file(subpath):
@@ -18,6 +19,7 @@ def download_file(subpath):
     else:
         abort(404, description="File not found.")
 
+
 @app.route("/downloadThumb/", defaults={"subpath": ""}, methods=["GET"])
 @app.route("/downloadThumb/<path:subpath>", methods=["GET"])
 def download_thumb(subpath):
@@ -26,6 +28,7 @@ def download_thumb(subpath):
         return send_file(file_path, as_attachment=True)
     else:
         abort(404, description="File not found.")
+
 
 @app.route("/upload/", defaults={"subpath": ""}, methods=["POST"])
 @app.route("/upload/<path:subpath>", methods=["POST"])
@@ -43,7 +46,8 @@ def upload_file(subpath):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     uploaded_file.save(save_path)
 
-    return f"File saved successfully: {save_path}", 200
+    return f"File saved successfully: {save_path}", 201
+
 
 @app.route("/uploadThumb/", defaults={"subpath": ""}, methods=["POST"])
 @app.route("/uploadThumb/<path:subpath>", methods=["POST"])
@@ -61,7 +65,7 @@ def upload_thumb(subpath):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     uploaded_file.save(save_path)
 
-    return f"Thumbnail saved successfully: {save_path}", 200
+    return f"Thumbnail saved successfully: {save_path}", 201
 
 
 @app.route("/mkdir/", defaults={"subpath": ""}, methods=["POST"])
@@ -107,6 +111,7 @@ def list_directory(subpath):
 
     return jsonify(contents)
 
+
 @app.route("/delete/", defaults={"subpath": ""}, methods=["DELETE"])
 @app.route("/delete/<path:subpath>", methods=["DELETE"])
 def delete_path(subpath):
@@ -122,6 +127,20 @@ def delete_path(subpath):
         return jsonify({"status": "success", "message": f"File and Directory delete completed: {subpath}"})
     else:
         abort(404, description="File or Directory not found.")
+
+
+@app.route("/deleteThumb/", defaults={"subpath": ""}, methods=["DELETE"])
+@app.route("/deleteThumb/<path:subpath>", methods=["DELETE"])
+def delete_thumb(subpath):
+    target_path = os.path.abspath(os.path.join(TEMP_DIR, subpath))
+    if not target_path.startswith(TEMP_DIR):
+        abort(403, description="Forbidden.")
+
+    if os.path.isfile(target_path):
+        os.remove(target_path)
+        return jsonify({"status": "success", "message": f"Thumbnail delete completed: {subpath}"})
+    else:
+        abort(404, description="File not found.")
 
 
 
