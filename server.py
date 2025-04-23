@@ -3,6 +3,7 @@ import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import shutil
+import subprocess
 
 app = Flask(__name__)
 
@@ -142,6 +143,16 @@ def delete_thumb(subpath):
     else:
         abort(404, description="File not found.")
 
+@app.route("/set_time", methods=["POST"])
+def set_time():
+    data = request.json
+    try:
+        date_string = f"{data['month']:02}{data['day']:02}{data['hour']:02}{data['minute']:02}{data['year']}.{data['second']:02}"
+        subprocess.run(["sudo", "date", date_string], check=True)
+        #subprocess.run(["sudo", "hwclock", "--systohc"], check=True)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
