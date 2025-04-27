@@ -154,6 +154,30 @@ def set_time():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+FILE_PATH = 'password.txt'
+
+@app.route('/password', methods=['POST'])
+def password_check():
+    try:
+        data = request.get_json()
+        received_text = data.get('text')
+        if received_text is None:
+            return jsonify({'response': 'Invalid request: No text field'}), 400
+
+        with open(FILE_PATH, 'r', encoding='utf-8') as file:
+            expected_text = file.read().strip()
+
+        if received_text == expected_text:
+            result = "Pass"
+        else:
+            result = "Fail"
+
+        return jsonify({'response': result})
+
+    except FileNotFoundError:
+        return jsonify({'response': 'Error: 기준 파일이 없습니다.'}), 500
+    except Exception as e:
+        return jsonify({'response': f'Error: {str(e)}'}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
