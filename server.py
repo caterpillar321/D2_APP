@@ -179,5 +179,88 @@ def password_check():
     except Exception as e:
         return jsonify({'response': f'Error: {str(e)}'}), 500
 
+def _safe_path(base_dir: str, subpath: str) -> str:
+    """
+    base_dir 아래의 안전한 절대 경로를 반환합니다.
+    ▸ base_dir 밖으로 빠져나가는 경로(../ 등)는 403 에러로 막습니다.
+    """
+    abs_path = os.path.abspath(os.path.join(base_dir, subpath))
+    if not abs_path.startswith(base_dir):
+        abort(403, description="Forbidden.")
+    return abs_path
+
+
+# ---------- 일반 파일/폴더 이동 ----------
+@app.route("/move/", defaults={"src": ""}, methods=["POST"])
+@app.route("/move/<path:src>", methods=["POST"])
+def move_path(src):
+    """JSON body 또는 쿼리스트링으로 목적지(dest)를 받아 이동합니다."""
+    # 목적지 경로는 JSON → 쿼리스트링 → 폼 순서로 탐색
+    dest_sub = (
+        request.json.get("dest")
+        if request.is_json and request.json
+        else request.args.get("dest")
+        if "dest" in request.args
+        else request.form.get("dest")
+    )
+    if not dest_sub:
+        abort(400, description="Missing destination path.")
+
+    src_path = _safe_path(BASE_DIR, src)
+    dest_path = _safe_path(BASE_DIR, dest_sub)
+
+    if not os.path.exists(src_path):
+        abort(404, description="Source not found.")
+
+    # 목적지 상위 폴더가 없으면 생성
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+    try:
+        shutil.move(src_path, dest_path)  # 파일·폴더 모두 지원
+        return jsonify(
+            {
+                "status": "success",
+                "message": f"Moved: {src} → {dest_sub}",
+            }
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ---------- 썸네일 이동 ----------
+@app.route("/moveThumb/", defaults={"src": ""}, methods=["POST"])
+@app.route("/moveThumb/<path:src>", methods=["POST"])
+def move_thumb(src):
+    dest_sub = (
+        request.json.get("dest")
+        if request.is_json and request.json
+        else request.args.get("dest")
+        if "dest" in request.args
+        else request.form.get("dest")
+    )
+    if not dest_sub:
+        abort(400, description="Missing destination path.")
+
+    src_path = _safe_path(TEMP_DIR, src)
+    dest_path = _safe_path(TEMP_DIR, dest_sub)
+
+    if not os.path.exists(src_path):
+        abort(404, description="Source not found.")
+
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+    try:
+        shutil.move(src_path, dest_path)
+        return jsonify(
+            {
+                "status": "success",
+                "message": f"Thumbnail moved: {src} → {dest_sub}",
+            }
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
