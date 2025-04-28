@@ -189,13 +189,9 @@ def _safe_path(base_dir: str, subpath: str) -> str:
         abort(403, description="Forbidden.")
     return abs_path
 
-
-# ---------- 일반 파일/폴더 이동 ----------
 @app.route("/move/", defaults={"src": ""}, methods=["POST"])
 @app.route("/move/<path:src>", methods=["POST"])
 def move_path(src):
-    """JSON body 또는 쿼리스트링으로 목적지(dest)를 받아 이동합니다."""
-    # 목적지 경로는 JSON → 쿼리스트링 → 폼 순서로 탐색
     dest_sub = (
         request.json.get("dest")
         if request.is_json and request.json
@@ -211,12 +207,10 @@ def move_path(src):
 
     if not os.path.exists(src_path):
         abort(404, description="Source not found.")
-
-    # 목적지 상위 폴더가 없으면 생성
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
     try:
-        shutil.move(src_path, dest_path)  # 파일·폴더 모두 지원
+        shutil.move(src_path, dest_path)
         return jsonify(
             {
                 "status": "success",
@@ -227,7 +221,6 @@ def move_path(src):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# ---------- 썸네일 이동 ----------
 @app.route("/moveThumb/", defaults={"src": ""}, methods=["POST"])
 @app.route("/moveThumb/<path:src>", methods=["POST"])
 def move_thumb(src):
